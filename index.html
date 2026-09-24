@@ -73,7 +73,7 @@ video.preview{width:100%;border-radius:8px;background:#000;max-height:450px;obje
         <div class="vumeter-bar"><div class="vumeter-fill" id="vuFill"></div></div>
       </div>
 
-      <button class="rec-btn" id="recBtn" title="Start/Stop Înregistrare"></button>
+      <button class="rec-btn" id="recBtn" title="Start/Stop Inregistrare"></button>
       <button class="btn primary" id="btnShareScreen">🖥️ Share Screen Full HD</button>
       <button class="btn" id="btnAiCut">AI CUT OFF</button>
       <button class="btn" id="btnUploadMedia">📁 Upload Foto/Video</button>
@@ -240,13 +240,14 @@ document.getElementById('btnAiCut').addEventListener('click', (e) => {
   state.aiCut = !state.aiCut;
   e.target.classList.toggle('on', state.aiCut);
   e.target.textContent = state.aiCut ? 'AI CUT ON' : 'AI CUT OFF';
-  showToast(state.aiCut ? 'AI Cut activat' : 'AI Cut dezactivat');
+  showToast(state.aiCut ? 'AI Cut activat (Mod avansat de decupare)' : 'AI Cut dezactivat');
 });
 
-// FREE TRANSFORM
+// FREE TRANSFORM: Lățime și Înălțime controlate complet din colțuri/margini
 let camBox = { x: 50, y: 50, w: 380, h: 220 };
 let activeHandle = null; 
 let dragStartX = 0, dragStartY = 0;
+let initialBox = {};
 
 const canvas = document.getElementById('stage');
 const ctx = canvas.getContext('2d');
@@ -268,6 +269,7 @@ canvas.addEventListener('mousedown', (e) => {
     dragStartX = mouseX - camBox.x;
     dragStartY = mouseY - camBox.y;
   }
+  initialBox = { ...camBox };
 });
 
 window.addEventListener('mousemove', (e) => {
@@ -305,7 +307,7 @@ function drawStudio() {
   
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // 1. Fundal complet pe ecran
+  // 1. Fundal complet pe ecran (Full Screen)
   if(state.customMediaObj) {
     ctx.drawImage(state.customMediaObj, 0, 0, canvas.width, canvas.height);
   } else if(state.screenStream && screenVid.readyState === screenVid.HAVE_ENOUGH_DATA) {
@@ -320,7 +322,7 @@ function drawStudio() {
     ctx.textAlign = 'left';
   }
 
-  // 2. Camera Web cu Free Transform și AI Cut optimizat și rafinat
+  // 2. Camera Web cu Free Transform și AI Cut Îmbunătățit
   if(camVid.readyState === camVid.HAVE_ENOUGH_DATA) {
     ctx.save();
     ctx.beginPath();
@@ -335,27 +337,27 @@ function drawStudio() {
       let frame = offCtx.getImageData(0, 0, camBox.w, camBox.h);
       let data = frame.data;
       
-      // Eșantionare din colțuri pentru estimarea automată a fundalului
-      let c1_r = data[0], c1_g = data[1], c1_b = data[2];
-      let c2_r = data[(camBox.w - 1) * 4], c2_g = data[(camBox.w - 1) * 4 + 1], c2_b = data[(camBox.w - 1) * 4 + 2];
-      let bgR = (c1_r + c2_r) / 2;
-      let bgG = (c1_g + c2_g) / 2;
-      let bgB = (c1_b + c2_b) / 2;
+      // Eșantionare colțuri pentru detecția dinamică a fundalului (colțul superior stâng ca referință)
+      let sampleIndex = 0; // primul pixel
+      let bgR = data[sampleIndex];
+      let bgG = data[sampleIndex + 1];
+      let bgB = data[sampleIndex + 2];
 
       for (let i = 0; i < data.length; i += 4) {
         let r = data[i], g = data[i+1], b = data[i+2];
+        
+        // Calculul distanței colorimetrice față de culoare de fundal detectată și saturație/luminanță
+        let dist = Math.sqrt(Math.pow(r - bgR, 2) + Math.pow(g - bgG, 2) + Math.pow(b - bgB, 2));
         let maxColor = Math.max(r, g, b);
         let minColor = Math.min(r, g, b);
-        let sat = maxColor - minColor;
-        let diff = Math.abs(r - bgR) + Math.abs(g - bgG) + Math.abs(b - bgB);
+        let diff = maxColor - minColor;
 
-        // Algoritm îmbunătățit de decupare: detectează culori similare fundalului de pe margini
-        // sau pixeli extremi (foarte deschiși/foarte închiși fără saturație de piele)
-        if ((diff < 42 && sat < 30) || (maxColor > 225 && sat < 15) || (maxColor < 35 && sat < 15)) {
-          data[i+3] = 0; // Transparent
-        } else if (diff < 65 && sat < 40) {
-          // Antialiasing fin pe margini pentru a evita efectul de dinte de ferăstrău
-          data[i+3] = Math.floor((diff / 65) * 255);
+        // Eliminare avansată: fundaluri uniforme (închise, deschise sau cromatice) cu tranziție fină la margini
+        if (dist < 48 || (maxColor < 50 && diff < 20) || (r > 215 && g > 215 && b > 215 && diff < 15)) {
+          data[i+3] = 0; // Transpare complet
+        } else if (dist < 65) {
+          // Zona de tranziție (feathering) pentru a evita efectul de dinți de ferăstrău
+          data[i+3] = Math.floor(((dist - 48) / 17) * 255);
         }
       }
       offCtx.putImageData(frame, 0, 0);
@@ -365,6 +367,7 @@ function drawStudio() {
     }
     ctx.restore();
 
+    // Chenar și mâner de redimensionare liberă (Free Transform)
     ctx.strokeStyle = '#7ecbff';
     ctx.lineWidth = 2;
     ctx.strokeRect(camBox.x, camBox.y, camBox.w, camBox.h);
