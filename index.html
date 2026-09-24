@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-<title>Studio Live AI</title>
+<title>Nervobiții</title>
 <style>
 :root{--bg:#071018;--panel:#0d1822;--blue:#7ecbff;--blue2:#b9e4ff;--red:#c1392b;--text:#eaf6ff;--muted:#9bb6c9;--line:#1c3344}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -73,22 +73,28 @@ video.preview{width:100%;border-radius:12px;background:#000;max-height:360px}
 </head>
 <body>
 <div class="app">
-<header class="topbar"><div class="logo">STUDIO LIVE</div><div class="chip" id="userChip">creator</div></header>
+<header class="topbar"><div class="logo">NERVOBIȚII</div><div class="chip" id="userChip">vizitator</div></header>
 <section id="home" class="screen active">
-  <h1>Studio Video & Stream</h1>
-  <p class="muted">Aplicație personalizată pentru înregistrare și randare video.</p>
-  <img class="hero" id="heroSala" alt="Studio"/>
-  <button class="btn primary" data-go="seats">Panou Control</button>
-  <button class="btn full" data-go="studio">Deschide Studio</button>
-  <p class="warn">Trage camera liber pe ecran. Folosește colțul dreapta-jos pentru redimensionare.</p>
+  <h1>Tribuna virtuală</h1>
+  <p class="muted">Pamflet. Nu este Camera Deputaților. Max 3 minute.</p>
+  <img class="hero" id="heroSala" alt="Sala"/>
+  <button class="btn primary" data-go="seats">300 de locuri</button>
+  <button class="btn full" data-go="studio">Prezidiu / filmare</button>
+  <p class="warn">Trage camera pe pupitru. SHOW stânga-sus. 3 scene sub comenzi.</p>
 </section>
 <section id="seats" class="screen">
-  <h2>Setări Rapide</h2>
-  <p class="muted">Configurarea elementelor din interfață.</p>
-  <div class="mapwrap"><img id="seatBg" alt="prev"/><canvas id="seatDots"></canvas></div>
-  <div class="legend"><span><i class="dot g"></i>activ</span><span><i class="dot r"></i>inactiv</span></div>
+  <h2>300 de locuri</h2>
+  <p class="muted">Pe poză: punct roșu = înscris / la rând. Fundal mai luminat.</p>
+  <div class="mapwrap"><img id="seatBg" alt="sală"/><canvas id="seatDots"></canvas></div>
+  <div class="legend"><span><i class="dot g"></i>liber</span><span><i class="dot r"></i>înscris</span></div>
   <div class="seats" id="seatGrid"></div>
-  <div class="card"><h2>Stare sistem</h2><div id="queueList"><div class="queue-item"><span>Mod operare</span><span>Standard</span></div></div></div>
+  <div class="card"><h2>La rând / prezidiu</h2><div id="queueList"></div></div>
+  <div class="card" id="reserveBox" style="display:none">
+    <h2>Rezervi locul <span id="selSeat"></span></h2>
+    <div class="field"><label>Nume</label><input id="nume"/></div>
+    <div class="field"><label>Oraș</label><input id="oras"/></div>
+    <button class="btn primary" id="btnReserve">Rezervă cu Pălăria</button>
+  </div>
 </section>
 <section id="studio" class="screen">
   <div class="studio" id="stageBox">
@@ -101,8 +107,8 @@ video.preview{width:100%;border-radius:12px;background:#000;max-height:360px}
   <div class="rec-row"><button class="rec-btn" id="recBtn"></button></div>
   <div class="gifts" id="giftsBar">
     <div class="gift" data-gift="trandafiri"><span>🌹</span>x10</div>
-    <div class="gift" data-gift="gogoasa"><span>🍩</span>efect</div>
-    <div class="gift" data-gift="palarie"><span>🎩</span>filtru</div>
+    <div class="gift" data-gift="gogoasa"><span>🍩</span>gogoașă</div>
+    <div class="gift" data-gift="palarie"><span>🎩</span>pălărie</div>
   </div>
   <div class="tools" id="tools">
     <button class="btn on" id="btnMic">🎙 Mic ON</button>
@@ -119,7 +125,7 @@ video.preview{width:100%;border-radius:12px;background:#000;max-height:360px}
   <p class="muted" style="margin-top:8px">Schimbă scena fundal</p>
   <div class="scenes" id="scenes"></div>
   <div class="field"><label>Logo pe ecran (gol = fără logo)</label>
-    <input id="logoText" maxlength="28" placeholder="Numele tău sau Brand"/>
+    <input id="logoText" maxlength="28" placeholder="NERVOBIȚII sau numele tău"/>
   </div>
   <input type="file" id="fileMask" accept="image/*" hidden/>
   <input type="file" id="fileBgPhoto" accept="image/*" hidden/>
@@ -128,27 +134,28 @@ video.preview{width:100%;border-radius:12px;background:#000;max-height:360px}
 <section id="preview" class="screen">
   <h2>Înregistrare finalizată</h2>
   <video id="previewVid" class="preview" controls></video>
-  <div class="field"><label>Titlu</label><input id="titlu" placeholder="Nume clip"/></div>
+  <div class="field"><label>Titlu</label><input id="titlu" placeholder="Propunerea ta"/></div>
   <div class="row">
-    <button class="btn green full" id="btnPublish">Salvează</button>
+    <button class="btn green full" id="btnPublish">Publică</button>
     <button class="btn full" id="btnDownload">Descarcă</button>
     <button class="btn danger full" id="btnDelete">Șterge</button>
   </div>
 </section>
 <section id="feed" class="screen">
-  <h2>Clipuri Salvate</h2>
+  <h2>Propuneri</h2>
   <div id="feedList"></div>
 </section>
 <nav class="nav">
   <button data-go="home" class="active">Acasă</button>
-  <button data-go="seats">Setări</button>
-  <button data-go="studio">Studio</button>
-  <button data-go="feed">Arhivă</button>
+  <button data-go="seats">Locuri</button>
+  <button data-go="studio">Tribună</button>
+  <button data-go="feed">Clipuri</button>
 </nav>
 <div class="toast" id="toast"></div>
 </div>
 
 <script>
+// Navigare simplă între ecrane
 function goTo(screenId) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
@@ -194,16 +201,16 @@ async function initCam() {
 }
 initCam();
 
-// Toggle AI CUT ON/OFF îmbunătățit
+// Toggle AI CUT ON/OFF (Funcționalitate completă pe butonul tău)
 const btnBg = document.getElementById('btnBg');
 btnBg.addEventListener('click', () => {
   aiCutActive = !aiCutActive;
   btnBg.classList.toggle('on', aiCutActive);
   btnBg.textContent = aiCutActive ? 'AI CUT ON' : 'AI CUT OFF';
-  showToast(aiCutActive ? 'AI Cut îmbunătățit activat' : 'AI Cut dezactivat');
+  showToast(aiCutActive ? 'AI Cut activat' : 'AI Cut dezactivat');
 });
 
-// Evenimente Mouse / Touch pentru Free Transform
+// Evenimente Mouse / Touch pentru Free Transform (Mutare și Redimensionare lățime/înălțime liberă)
 canvas.addEventListener('mousedown', (e) => {
   const rect = canvas.getBoundingClientRect();
   const scaleX = canvas.width / rect.width;
@@ -211,6 +218,7 @@ canvas.addEventListener('mousedown', (e) => {
   const mouseX = (e.clientX - rect.left) * scaleX;
   const mouseY = (e.clientY - rect.top) * scaleY;
 
+  // Verificăm colțul inferior-drept pentru resize liber
   if(mouseX >= camBox.x + camBox.w - 15 && mouseX <= camBox.x + camBox.w + 15 &&
      mouseY >= camBox.y + camBox.h - 15 && mouseY <= camBox.y + camBox.h + 15) {
     activeHandle = 'resize';
@@ -244,7 +252,7 @@ window.addEventListener('mouseup', () => {
   activeHandle = null;
 });
 
-// Randare cadru Studio cu AI Cut îmbunătățit
+// Randare cadru Studio cu suport pentru AI Cut
 const offCanvas = document.createElement('canvas');
 const offCtx = offCanvas.getContext('2d', { willReadFrequently: true });
 
@@ -256,9 +264,11 @@ function renderStudio() {
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
+  // Fundal cadru
   ctx.fillStyle = '#071018';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+  // Randare Cameră Web cu Free Transform și AI Cut
   if(camVid.readyState === camVid.HAVE_ENOUGH_DATA) {
     ctx.save();
     ctx.beginPath();
@@ -271,21 +281,13 @@ function renderStudio() {
       offCtx.drawImage(camVid, 0, 0, camBox.w, camBox.h);
       let frame = offCtx.getImageData(0, 0, camBox.w, camBox.h);
       let data = frame.data;
-      
-      // Algoritm AI Cut îmbunătățit (detecție dinamică pentru separarea subiectului de fundal uniform/deschis)
       for (let i = 0; i < data.length; i += 4) {
         let r = data[i], g = data[i+1], b = data[i+2];
         let maxColor = Math.max(r, g, b);
         let minColor = Math.min(r, g, b);
-        let diff = maxColor - minColor;
-
-        // Elimină fundalurile foarte deschise (albe/gri) sau foarte închise cu toleranță mărită
-        if ((maxColor < 50 && diff < 20) || (r > 200 && g > 200 && b > 200 && diff < 15)) {
-          data[i+3] = 0; // Transparență completă
-        } else if (r > 180 && g > 180 && b > 180) {
-          // Semi-transparență fină pentru margini (anti-aliasing)
-          data[i+3] = Math.floor(255 * (255 - maxColor) / 50);
-          if(data[i+3] < 0) data[i+3] = 0;
+        // Eliminare fundal deschis/închis uniform (AI Cut)
+        if ((maxColor < 45 && (maxColor - minColor) < 15) || (r > 210 && g > 210 && b > 210 && (maxColor - minColor) < 12)) {
+          data[i+3] = 0;
         }
       }
       offCtx.putImageData(frame, 0, 0);
@@ -295,6 +297,7 @@ function renderStudio() {
     }
     ctx.restore();
 
+    // Contur și mâner Free Transform în colțul din dreapta-jos
     ctx.strokeStyle = '#7ecbff';
     ctx.lineWidth = 2;
     ctx.strokeRect(camBox.x, camBox.y, camBox.w, camBox.h);
