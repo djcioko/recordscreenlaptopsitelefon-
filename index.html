@@ -155,6 +155,7 @@ video.preview{width:100%;border-radius:12px;background:#000;max-height:360px}
 </div>
 
 <script>
+// Navigare simplă între ecrane
 function goTo(screenId) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
@@ -173,7 +174,9 @@ function showToast(msg) {
   setTimeout(() => t.style.display = 'none', 3000);
 }
 
-// CAMERA & FREE TRANSFORM LOGIC + DOAR FUNCTIA AI CUT OFF (REVENIRE LA OFF)
+// ----------------------------------------------------
+// CAMERA & FREE TRANSFORM LOGIC PENTRU CADRUL WEB
+// ----------------------------------------------------
 let camBox = { x: 30, y: 150, w: 160, h: 220 };
 let activeHandle = null;
 let dragStartX = 0, dragStartY = 0;
@@ -186,6 +189,7 @@ ctx.imageSmoothingQuality = 'high';
 const camVid = document.getElementById('cam');
 let aiCutActive = false;
 
+// Pornire cameră
 async function initCam() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 }, audio: true });
@@ -197,14 +201,16 @@ async function initCam() {
 }
 initCam();
 
+// Toggle AI CUT ON/OFF
 const btnBg = document.getElementById('btnBg');
 btnBg.addEventListener('click', () => {
-  aiCutActive = false; // Forțăm starea pe OFF exact cum ai cerut
-  btnBg.classList.remove('on');
-  btnBg.textContent = 'AI CUT OFF';
-  showToast('AI Cut este setat pe OFF');
+  aiCutActive = !aiCutActive;
+  btnBg.classList.toggle('on', aiCutActive);
+  btnBg.textContent = aiCutActive ? 'AI CUT ON' : 'AI CUT OFF';
+  showToast(aiCutActive ? 'AI Cut activat' : 'AI Cut dezactivat');
 });
 
+// Evenimente Mouse / Touch pentru Free Transform (Mutare și Redimensionare lățime/înălțime liberă)
 canvas.addEventListener('mousedown', (e) => {
   const rect = canvas.getBoundingClientRect();
   const scaleX = canvas.width / rect.width;
@@ -212,6 +218,7 @@ canvas.addEventListener('mousedown', (e) => {
   const mouseX = (e.clientX - rect.left) * scaleX;
   const mouseY = (e.clientY - rect.top) * scaleY;
 
+  // Verificăm colțul inferior-drept pentru resize liber
   if(mouseX >= camBox.x + camBox.w - 15 && mouseX <= camBox.x + camBox.w + 15 &&
      mouseY >= camBox.y + camBox.h - 15 && mouseY <= camBox.y + camBox.h + 15) {
     activeHandle = 'resize';
@@ -245,6 +252,10 @@ window.addEventListener('mouseup', () => {
   activeHandle = null;
 });
 
+// Randare cadru Studio
+const offCanvas = document.createElement('canvas');
+const offCtx = offCanvas.getContext('2d', { willReadFrequently: true });
+
 function renderStudio() {
   if(canvas.width !== canvas.offsetWidth || canvas.height !== canvas.offsetHeight) {
     canvas.width = canvas.offsetWidth || 360;
@@ -253,19 +264,40 @@ function renderStudio() {
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
+  // Fundal simplu negru sau scenă implicită
   ctx.fillStyle = '#071018';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+  // Randare Cameră Web cu Free Transform și AI Cut
   if(camVid.readyState === camVid.HAVE_ENOUGH_DATA) {
     ctx.save();
     ctx.beginPath();
     ctx.rect(camBox.x, camBox.y, camBox.w, camBox.h);
     ctx.clip();
 
-    // AI Cut fiind pe OFF, randăm direct imaginea normală de la cameră
-    ctx.drawImage(camVid, camBox.x, camBox.y, camBox.w, camBox.h);
+    if(aiCutActive) {
+      offCanvas.width = camBox.w;
+      offCanvas.height = camBox.h;
+      offCtx.drawImage(camVid, 0, 0, camBox.w, camBox.h);
+      let frame = offCtx.getImageData(0, 0, camBox.w, camBox.h);
+      let data = frame.data;
+      for (let i = 0; i < data.length; i += 4) {
+        let r = data[i], g = data[i+1], b = data[i+2];
+        let maxColor = Math.max(r, g, b);
+        let minColor = Math.min(r, g, b);
+        // Algoritm curat de eliminare fundal deschis/închis
+        if ((maxColor < 45 && (maxColor - minColor) < 15) || (r > 210 && g > 210 && b > 210 && (maxColor - minColor) < 12)) {
+          data[i+3] = 0;
+        }
+      }
+      offCtx.putImageData(frame, 0, 0);
+      ctx.drawImage(offCanvas, camBox.x, camBox.y);
+    } else {
+      ctx.drawImage(camVid, camBox.x, camBox.y, camBox.w, camBox.h);
+    }
     ctx.restore();
 
+    // Contur și mâner Free Transform în colțul din dreapta-jos
     ctx.strokeStyle = '#7ecbff';
     ctx.lineWidth = 2;
     ctx.strokeRect(camBox.x, camBox.y, camBox.w, camBox.h);
