@@ -3,127 +3,105 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-<title>Nervobiții - Studio & Screen Recorder HD</title>
+<title>Nervobiții - Studio & Screen Recorder Pro</title>
 <style>
-:root{--bg:#071018;--panel:#0d1822;--blue:#7ecbff;--blue2:#b9e4ff;--red:#c1392b;--text:#eaf6ff;--muted:#9bb6c9;--line:#1c3344}
+:root{--bg:#03070b;--panel:#0a141d;--blue:#7ecbff;--blue2:#b9e4ff;--red:#c1392b;--text:#eaf6ff;--muted:#9bb6c9;--line:#1c3344}
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia,serif}
-button,input{font-family:inherit}
-.app{max-width:960px;margin:0 auto;min-height:100%;background:linear-gradient(#0b1a24,#071018);padding-bottom:70px}
-.topbar{display:flex;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--line)}
-.logo{letter-spacing:.16em;font-size:14px;color:var(--blue2);font-weight:bold}
-.screen{display:none;padding:12px}
-.screen.active{display:block}
-h1,h2{font-weight:500;color:var(--blue2)}
-h1{font-size:22px;margin:8px 0}h2{font-size:16px;margin:8px 0}
-.muted{color:var(--muted);font-size:12px;line-height:1.35}
-.btn{display:inline-flex;align-items:center;justify-content:center;border:1px solid #5aa0d0;background:linear-gradient(#3a7eb0,#1d4e73);color:#eaf6ff;padding:10px 14px;border-radius:10px;cursor:pointer;font-size:13px}
-.btn.primary,.btn.full{width:100%}
-.btn.primary{margin-top:8px;background:linear-gradient(#4aa0d8,#21608f)}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:sans-serif;overflow:hidden}
+.app{display:flex;flex-direction:column;height:100vh;width:100vw}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:8px 16px;background:var(--panel);border-bottom:1px solid var(--line);z-index:20}
+.logo{font-size:13px;color:var(--blue2);font-weight:bold;letter-spacing:.1em}
+.screen{display:none;flex:1;flex-direction:column;position:relative;background:#000;overflow:hidden}
+.screen.active{display:flex}
+
+/* Studio & Screen Fullscreen Layout */
+.studio{position:relative;flex:1;width:100%;height:100%;background:#000;overflow:hidden}
+.studio canvas{width:100%;height:100%;display:block;background:#000}
+.studio video.raw{position:absolute;opacity:0;pointer-events:none}
+
+.timer{position:absolute;right:16px;top:16px;background:rgba(0,0,0,0.7);padding:6px 12px;border-radius:8px;color:#fff;font-size:14px;border:1px solid var(--line);z-index:15}
+
+/* Panou controale inferior flotant */
+.control-panel{position:absolute;bottom:0;left:0;width:100%;background:rgba(10,20,29,0.9);border-top:1px solid var(--line);padding:10px 16px;display:flex;flex-direction:column;gap:8px;z-index:25;transition:transform 0.3s ease}
+.control-panel.hidden{transform:translateY(100%)}
+
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center}
+.btn{border:1px solid #5aa0d0;background:linear-gradient(#3a7eb0,#1d4e73);color:#eaf6ff;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:6px}
+.btn.primary{background:linear-gradient(#4aa0d8,#21608f)}
 .btn.danger{border-color:#7a2a22;color:#f3c2bc;background:linear-gradient(#5a2a28,#2a1514)}
 .btn.green{border-color:#2d6a3c;color:#b6f0c6}
 .btn.on{outline:2px solid #7ecbff;background:linear-gradient(#21608f,#10304a)}
-.row{display:flex;gap:8px}.row .btn{flex:1}
-.field{margin:10px 0}
-.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
-.field input{width:100%;background:#071018;border:1px solid #2a5570;color:var(--text);padding:10px;border-radius:8px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0}
 
-/* Studio & Screen Recorder Layout (Orizontal HD 16:9) */
-.studio{position:relative;width:100%;aspect-ratio:16/9;max-height:75vh;background:#000;border-radius:14px;overflow:hidden;border:1px solid #2a5570}
-.studio canvas{width:100%;height:100%;object-fit:contain;display:block;background:#000}
-.studio video.raw{position:absolute;opacity:0;pointer-events:none}
-.timer{position:absolute;right:12px;top:12px;background:rgba(0,0,0,0.6);padding:4px 10px;border-radius:8px;color:#fff;font-size:13px;pointer-events:none;border:1px solid var(--line)}
-
-.tools{display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:8px;margin-top:12px}
-.tools.hide{display:none}
-.tools .btn{font-size:12px;padding:9px}
-.rec-row{display:flex;justify-content:center;margin-top:10px}
-.rec-btn{width:64px;height:64px;border-radius:50%;border:4px solid #fff;background:#c1392b;cursor:pointer;transition:0.2s}
+.rec-row{display:flex;align-items:center;justify-content:center;gap:20px}
+.rec-btn{width:50px;height:50px;border-radius:50%;border:3px solid #fff;background:#c1392b;cursor:pointer;transition:0.2s}
 .rec-btn:hover{transform:scale(1.05)}
-.rec-btn.rec{background:#fff;border-color:#c1392b;border-radius:14px;width:40px;height:40px}
+.rec-btn.rec{background:#fff;border-color:#c1392b;border-radius:10px;width:32px;height:32px}
 
-.gifts{display:flex;justify-content:center;gap:16px;margin-top:8px}
-.gifts.hide{display:none}
-.gift{text-align:center;font-size:10px;color:#cfe8f8;cursor:pointer}
-.gift span{font-size:16px;display:block}
+/* VU Metru audio */
+.vumeter-box{display:flex;align-items:center;gap:8px;background:#03070b;padding:6px 12px;border-radius:8px;border:1px solid var(--line)}
+.vumeter-bar{width:100px;height:10px;background:#1c3344;border-radius:5px;overflow:hidden}
+.vumeter-fill{height:100%;width:0%;background:linear-gradient(90deg, #2d6a3c, #f1c40f, #c1392b);transition:width 0.05s linear}
 
-.hide-btn{position:absolute;left:12px;top:12px;z-index:6;width:50px;height:28px;border-radius:8px;border:1px solid #7ecbff;background:#0d1822cc;color:#b9e4ff;font-size:10px;cursor:pointer}
-.scenes{display:flex;gap:8px;margin-top:8px;overflow-x:auto;padding-bottom:4px}
-.scenes button{flex:0 0 130px;padding:0;border:2px solid #2a5570;border-radius:8px;overflow:hidden;background:#071018;cursor:pointer}
-.scenes button.on{border-color:#7ecbff}
-.scenes img{width:100%;height:65px;object-fit:cover;display:block;filter:brightness(1.14)}
-.scene-lab{font-size:10px;text-align:center;padding:3px;color:#b9e4ff}
+.hide-btn{position:absolute;left:16px;top:16px;z-index:30;padding:6px 14px;border-radius:8px;border:1px solid #7ecbff;background:rgba(13,24,34,0.8);color:#b9e4ff;font-size:11px;cursor:pointer}
 
-.nav{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:960px;display:grid;grid-template-columns:repeat(2,1fr);background:#071018ee;border-top:1px solid var(--line);z-index:100}
-.nav button{background:none;border:0;color:var(--muted);padding:12px;font-size:13px;cursor:pointer}
+.nav{display:grid;grid-template-columns:repeat(2,1fr);background:#071018;border-top:1px solid var(--line)}
+.nav button{background:none;border:0;color:var(--muted);padding:10px;font-size:12px;cursor:pointer}
 .nav button.active{color:var(--blue2);font-weight:bold}
-.toast{position:fixed;left:50%;bottom:76px;transform:translateX(-50%);background:#123044;color:#b9e4ff;padding:10px 18px;border-radius:20px;font-size:13px;display:none;z-index:999;border:1px solid var(--blue)}
-video.preview{width:100%;border-radius:12px;background:#000;max-height:400px}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#123044;color:#b9e4ff;padding:8px 16px;border-radius:20px;font-size:12px;display:none;z-index:999;border:1px solid var(--blue)}
+video.preview{width:100%;border-radius:8px;background:#000;max-height:450px;object-fit:contain}
+.preview-container{padding:20px;display:flex;flex-direction:column;gap:12px;max-width:900px;margin:0 auto;width:100%;overflow-y:auto}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:11px;color:var(--muted)}
+.field input{background:#071018;border:1px solid #2a5570;color:var(--text);padding:8px;border-radius:6px;font-size:13px}
 </style>
 </head>
 <body>
 <div class="app">
-<header class="topbar">
-  <div class="logo">NERVOBIȚII - REC STUDIO HD</div>
-  <div class="chip" id="userChip" style="font-size:12px;color:var(--blue)">Creator</div>
-</header>
 
-<!-- STUDIO & SCREEN RECORDER SCREEN -->
+<!-- STUDIO SCREEN -->
 <section id="studio" class="screen active">
   <div class="studio" id="stageBox">
     <video id="cam" class="raw" playsinline muted></video>
     <video id="screenShareVid" class="raw" playsinline autoplay muted></video>
     <canvas id="stage"></canvas>
-    <button class="hide-btn" id="btnHide">SHOW</button>
+    
+    <button class="hide-btn" id="btnHide">ASCUNDE CONTROALE</button>
     <div class="timer" id="recTimer">00:00 / 10:00</div>
   </div>
 
-  <div class="rec-row"><button class="rec-btn" id="recBtn" title="Start/Stop Inregistrare"></button></div>
+  <div class="control-panel" id="controlPanel">
+    <div class="rec-row">
+      <button class="btn on" id="btnMic">🎙 Mic ON</button>
+      
+      <div class="vumeter-box">
+        <span style="font-size:10px;color:var(--muted)">VU:</span>
+        <div class="vumeter-bar"><div class="vumeter-fill" id="vuFill"></div></div>
+      </div>
 
-  <div class="gifts" id="giftsBar">
-    <div class="gift" data-gift="trandafiri"><span>🌹</span>x10</div>
-    <div class="gift" data-gift="gogoasa"><span>🍩</span>gogoașă</div>
-    <div class="gift" data-gift="palarie"><span>🎩</span>pălărie</div>
+      <button class="rec-btn" id="recBtn" title="Start/Stop Inregistrare"></button>
+      <button class="btn primary" id="btnShareScreen">🖥️ Share Screen Full HD</button>
+      <button class="btn" id="btnAiCut">AI CUT OFF</button>
+    </div>
   </div>
-
-  <div class="tools" id="tools">
-    <button class="btn on" id="btnMic">🎙 Mic ON</button>
-    <button class="btn primary" id="btnShareScreen">🖥️ Share Screen HD</button>
-    <button class="btn" id="btnCrop">AI Crop OFF</button>
-    <button class="btn" id="btnBg">AI CUT OFF</button>
-    <button class="btn" id="btnMask">Masca: Fără</button>
-    <button class="btn" id="btnBody">Corp: Om</button>
-    <button class="btn" id="btnPrivacy">Privacy: Față reală</button>
-    <button class="btn" id="btnUploadMask">Upload mască</button>
-    <button class="btn" id="btnUploadBg">Upload fundal foto</button>
-    <button class="btn" id="btnCam">Alege cameră</button>
-  </div>
-
-  <p class="muted" style="margin-top:10px">Schimbă scena fundal sau imaginea încărcată</p>
-  <div class="scenes" id="scenes"></div>
-
-  <div class="field">
-    <label>Logo pe ecran (gol = fără logo)</label>
-    <input id="logoText" maxlength="35" placeholder="Nume sau titlu tutorial"/>
-  </div>
-
-  <input type="file" id="fileMaskInput" accept="image/*" hidden/>
-  <input type="file" id="fileBgInput" accept="image/*" hidden/>
 </section>
 
 <!-- PREVIEW SCREEN -->
-<section id="preview" class="screen">
-  <h2>Înregistrare finalizată (HD MP4 / WebM)</h2>
-  <video id="previewVid" class="preview" controls></video>
-  <div class="field"><label>Titlu tutorial / clip</label><input id="titlu" placeholder="Nume fișier export"/></div>
-  <div class="row" style="margin-top:10px">
-    <button class="btn green full" id="btnDownload">Descarcă MP4 / WebM</button>
-    <button class="btn danger full" id="btnDelete">Șterge / Refă</button>
+<section id="preview" class="screen" style="background:var(--bg)">
+  <div class="preview-container">
+    <h2>Înregistrare finalizată (MP4 / WebM)</h2>
+    <video id="previewVid" class="preview" controls></video>
+    <div class="field">
+      <label>Titlu fișier / clip</label>
+      <input id="titlu" placeholder="Nume tutorial video"/>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn green" style="flex:1" id="btnDownload">Descarcă Video</button>
+      <button class="btn danger" style="flex:1" id="btnDelete">Șterge / Înregistrează din nou</button>
+    </div>
   </div>
 </section>
 
-<!-- NAVIGATION BAR -->
+<!-- NAVIGATION -->
 <nav class="nav">
   <button data-go="studio" class="active">Studio & Rec</button>
   <button data-go="preview">Previzualizare</button>
@@ -133,28 +111,10 @@ video.preview{width:100%;border-radius:12px;background:#000;max-height:400px}
 </div>
 
 <script>
-const SCENES = [
-  {name:"Sală clasică", src:"data:image/jpeg;base64,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"},
-  {name:"Sală modernă", src:"data:image/jpeg;base64,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"}
-];
-
 let state = {
-  activeScreen: 'studio',
-  userChip: 'Creator',
-  recTime: 0,
   isRec: false,
-  isHide: false,
-  currentScene: 0,
-  logoText: '',
   micOn: true,
-  aiCrop: false,
   aiCut: false,
-  mask: 'Fără',
-  body: 'Om',
-  privacy: 'Față reală',
-  customMaskUrl: null,
-  customBgUrl: null,
-  selectedCam: 0,
   stream: null,
   screenStream: null
 };
@@ -169,42 +129,24 @@ function showToast(msg) {
 function goTo(screenId) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
-  
-  const target = document.getElementById(screenId);
-  if (target) target.classList.add('active');
-  
-  const navBtn = document.querySelector(`.nav button[data-go="${screenId}"]`);
-  if (navBtn) navBtn.classList.add('active');
-  
-  state.activeScreen = screenId;
+  document.getElementById(screenId).classList.add('active');
+  document.querySelector(`.nav button[data-go="${screenId}"]`).classList.add('active');
 }
 
 document.querySelectorAll('[data-go]').forEach(btn => {
   btn.addEventListener('click', () => goTo(btn.getAttribute('data-go')));
 });
 
-const scenesContainer = document.getElementById('scenes');
-SCENES.forEach((sc, idx) => {
-  const btn = document.createElement('button');
-  if(idx === state.currentScene) btn.classList.add('on');
-  btn.innerHTML = `<img src="${sc.src}"><div class="scene-lab">${sc.name}</div>`;
-  btn.addEventListener('click', () => {
-    state.currentScene = idx;
-    state.customBgUrl = null;
-    document.querySelectorAll('.scenes button').forEach(b => b.classList.remove('on'));
-    btn.classList.add('on');
-    showToast(`Scenă fundal: ${sc.name}`);
-  });
-  scenesContainer.appendChild(btn);
+// Ascundere controale
+let controlsHidden = false;
+document.getElementById('btnHide').addEventListener('click', () => {
+  controlsHidden = !controlsHidden;
+  document.getElementById('controlPanel').classList.toggle('hidden', controlsHidden);
+  document.getElementById('btnHide').textContent = controlsHidden ? 'ARATĂ CONTROALE' : 'ASCUNDE CONTROALE';
 });
 
-let hiddenUI = false;
-document.getElementById('btnHide').addEventListener('click', () => {
-  hiddenUI = !hiddenUI;
-  document.getElementById('tools').classList.toggle('hide', hiddenUI);
-  document.getElementById('giftsBar').classList.toggle('hide', hiddenUI);
-  document.getElementById('btnHide').textContent = hiddenUI ? 'HIDE' : 'SHOW';
-});
+// Cameră Web & Audio + Analizor VU-Metru
+let audioContext, analyser, microphone, dataArray;
 
 async function initCamera() {
   try {
@@ -213,13 +155,36 @@ async function initCamera() {
     const camVid = document.getElementById('cam');
     camVid.srcObject = stream;
     camVid.play();
+
+    // Setare VU-Metru audio
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioContext.createAnalyser();
+    microphone = audioContext.createMediaStreamSource(stream);
+    microphone.connect(analyser);
+    analyser.fftSize = 256;
+    dataArray = new Uint8Array(analyser.frequencyBinCount);
+    updateVuMeter();
   } catch(e) {
-    console.error("Erore cameră:", e);
-    showToast('Nu s-a putut accesa camera.');
+    showToast('Erore la pornirea camerei sau microfonului.');
   }
 }
 initCamera();
 
+function updateVuMeter() {
+  if (analyser && state.micOn) {
+    analyser.getByteFrequencyData(dataArray);
+    let sum = 0;
+    for(let i = 0; i < dataArray.length; i++) { sum += dataArray[i]; }
+    let avg = sum / dataArray.length;
+    let percentage = Math.min(100, Math.round((avg / 128) * 100));
+    document.getElementById('vuFill').style.width = percentage + '%';
+  } else {
+    document.getElementById('vuFill').style.width = '0%';
+  }
+  requestAnimationFrame(updateVuMeter);
+}
+
+// Share Screen Full HD
 const screenVid = document.getElementById('screenShareVid');
 document.getElementById('btnShareScreen').addEventListener('click', async () => {
   try {
@@ -231,13 +196,13 @@ document.getElementById('btnShareScreen').addEventListener('click', async () => 
     screenVid.srcObject = screenStream;
     screenVid.play();
     document.getElementById('btnShareScreen').classList.add('on');
-    showToast('Share Screen HD activat!');
+    showToast('Share Screen Full HD activat!');
 
     screenStream.getVideoTracks()[0].onended = () => {
       stopScreenShare();
     };
   } catch(e) {
-    showToast('Partajarea ecranului a fost anulată sau a eșuat.');
+    showToast('Partajarea ecranului a fost anulată.');
   }
 });
 
@@ -248,32 +213,127 @@ function stopScreenShare() {
   }
   screenVid.srcObject = null;
   document.getElementById('btnShareScreen').classList.remove('on');
-  showToast('Share Screen oprit.');
 }
 
-const fileBgInput = document.getElementById('fileBgInput');
-document.getElementById('btnUploadBg').addEventListener('click', () => fileBgInput.click());
-fileBgInput.addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if(file) {
-    const url = URL.createObjectURL(file);
-    state.customBgUrl = url;
-    showToast('Fundal foto încărcat cu succes!');
+// AI CUT Toggle
+document.getElementById('btnAiCut').addEventListener('click', (e) => {
+  state.aiCut = !state.aiCut;
+  e.target.classList.toggle('on', state.aiCut);
+  e.target.textContent = state.aiCut ? 'AI CUT ON' : 'AI CUT OFF';
+  showToast(state.aiCut ? 'AI Cut activat (eliminare fundal simplificat)' : 'AI Cut dezactivat');
+});
+
+// CAMERA INTERactivă: Free Transform, Drag & Resize cu Mouse-ul direct pe Canvas
+let camBox = { x: 50, y: 50, w: 360, h: 202 };
+let isDragging = false;
+let isResizing = false;
+let dragStartX = 0, dragStartY = 0;
+
+const canvas = document.getElementById('stage');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = true;
+ctx.imageSmoothingQuality = 'high';
+
+canvas.addEventListener('mousedown', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const mouseX = (e.clientX - rect.left) * scaleX;
+  const mouseY = (e.clientY - rect.top) * scaleY;
+
+  // Verificăm dacă e în colțul din dreapta-jos al camerei (pentru resize) sau în interior (pentru drag)
+  if(mouseX >= camBox.x + camBox.w - 30 && mouseX <= camBox.x + camBox.w + 10 &&
+     mouseY >= camBox.y + camBox.h - 30 && mouseY <= camBox.y + camBox.h + 10) {
+    isResizing = true;
+  } else if(mouseX >= camBox.x && mouseX <= camBox.x + camBox.w && mouseY >= camBox.y && mouseY <= camBox.y + camBox.h) {
+    isDragging = true;
+    dragStartX = mouseX - camBox.x;
+    dragStartY = mouseY - camBox.y;
   }
 });
 
-const fileMaskInput = document.getElementById('fileMaskInput');
-document.getElementById('btnUploadMask').addEventListener('click', () => fileMaskInput.click());
-fileMaskInput.addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if(file) {
-    state.customMaskUrl = URL.createObjectURL(file);
-    state.mask = 'Custom';
-    document.getElementById('btnMask').textContent = 'Masca: Custom';
-    showToast('Mască personalizată încărcată!');
+window.addEventListener('mousemove', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const mouseX = (e.clientX - rect.left) * scaleX;
+  const mouseY = (e.clientY - rect.top) * scaleY;
+
+  if(isDragging) {
+    camBox.x = mouseX - dragStartX;
+    camBox.y = mouseY - dragStartY;
+  } else if(isResizing) {
+    let newW = mouseX - camBox.x;
+    if(newW > 120 && newW < canvas.width - camBox.x) {
+      camBox.w = newW;
+      camBox.h = newW * (9/16); // Menținere aspect ratio 16:9
+    }
   }
 });
 
+window.addEventListener('mouseup', () => {
+  isDragging = false;
+  isResizing = false;
+});
+
+// Bucla principală de randare Full Screen
+const camVid = document.getElementById('cam');
+
+function drawStudio() {
+  if(canvas.width !== window.innerWidth || canvas.height !== window.innerHeight) {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // 1. Desenează Share Screen pe fundal complet
+  if(state.screenStream && screenVid.readyState === screenVid.HAVE_ENOUGH_DATA) {
+    ctx.drawImage(screenVid, 0, 0, canvas.width, canvas.height);
+  } else {
+    ctx.fillStyle = '#03070b';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#9bb6c9';
+    ctx.font = '20px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Apăsați pe "Share Screen Full HD" pentru a partaja ecranul', canvas.width / 2, canvas.height / 2);
+    ctx.textAlign = 'left';
+  }
+
+  // 2. Desenează Camera Web (cu Free Transform & AI Cut opțional)
+  if(camVid.readyState === camVid.HAVE_ENOUGH_DATA) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(camBox.x, camBox.y, camBox.w, camBox.h, 12);
+    ctx.clip();
+
+    if(state.aiCut) {
+      // Efect simplificat AI Cut (filtrare luminozitate/fundal orientativ)
+      ctx.drawImage(camVid, camBox.x, camBox.y, camBox.w, camBox.h);
+      ctx.globalCompositeOperation = 'destination-in';
+      ctx.fillStyle = 'rgba(255,255,255,0.95)';
+      ctx.fillRect(camBox.x, camBox.y, camBox.w, camBox.h);
+      ctx.globalCompositeOperation = 'source-over';
+    } else {
+      ctx.drawImage(camVid, camBox.x, camBox.y, camBox.w, camBox.h);
+    }
+    ctx.restore();
+
+    // Chenar cameră
+    ctx.strokeStyle = '#7ecbff';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(camBox.x, camBox.y, camBox.w, camBox.h);
+
+    // Colț de redimensionare vizibil
+    ctx.fillStyle = '#7ecbff';
+    ctx.fillRect(camBox.x + camBox.w - 10, camBox.y + camBox.h - 10, 10, 10);
+  }
+
+  requestAnimationFrame(drawStudio);
+}
+requestAnimationFrame(drawStudio);
+
+// Înregistrare Video
 let mediaRecorder;
 let recordedChunks = [];
 let isRecording = false;
@@ -282,37 +342,28 @@ let timerInterval = null;
 
 const recBtn = document.getElementById('recBtn');
 recBtn.addEventListener('click', () => {
-  if(!isRecording) {
-    startRecording();
-  } else {
-    stopRecording();
-  }
+  if(!isRecording) { startRecording(); } else { stopRecording(); }
 });
 
 function startRecording() {
   recordedChunks = [];
-  const canvasStream = canvas.captureStream(30); 
+  const canvasStream = canvas.captureStream(30);
   
-  let combinedStream = canvasStream;
   if(state.stream) {
-    const audioTracks = state.stream.getAudioTracks();
-    if(audioTracks.length > 0) {
-      audioTracks.forEach(track => combinedStream.addTrack(track));
-    }
+    state.stream.getAudioTracks().forEach(track => canvasStream.addTrack(track));
   }
 
   try {
-    let options = { mimeType: 'video/mp4', videoBitsPerSecond: 5000000 };
+    let options = { mimeType: 'video/mp4', videoBitsPerSecond: 6000000 };
     if (!MediaRecorder.isTypeSupported('video/mp4')) {
-      options = { mimeType: 'video/webm;codecs=vp9,opus', videoBitsPerSecond: 5000000 };
+      options = { mimeType: 'video/webm;codecs=vp9,opus', videoBitsPerSecond: 6000000 };
     }
 
-    mediaRecorder = new MediaRecorder(combinedStream, options);
+    mediaRecorder = new MediaRecorder(canvasStream, options);
     mediaRecorder.ondataavailable = e => { if(e.data.size > 0) recordedChunks.push(e.data); };
     mediaRecorder.onstop = () => {
       const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'video/mp4' });
-      const url = URL.createObjectURL(blob);
-      document.getElementById('previewVid').src = url;
+      document.getElementById('previewVid').src = URL.createObjectURL(blob);
       goTo('preview');
     };
     
@@ -326,19 +377,11 @@ function startRecording() {
       const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
       const secs = String(elapsed % 60).padStart(2, '0');
       document.getElementById('recTimer').textContent = `${mins}:${secs} / 10:00`;
-
-      if(elapsed === 540) { 
-        showToast('⚠️ ATENȚIE: Mai aveți 1 minut din limita de 10 minute!');
-      }
-      if(elapsed >= 600) { 
-        stopRecording();
-        showToast('Limita de 10 minute a fost atinsă. Înregistrare oprită automat.');
-      }
+      if(elapsed >= 600) { stopRecording(); showToast('Limita de 10 minute atinsă.'); }
     }, 1000);
 
-    showToast('Înregistrare HD pornită');
+    showToast('Înregistrare pornită');
   } catch(e) {
-    console.error(e);
     showToast('Erore la pornirea înregistrării.');
   }
 }
@@ -349,100 +392,29 @@ function stopRecording() {
     isRecording = false;
     recBtn.classList.remove('rec');
     clearInterval(timerInterval);
-    showToast('Înregistrare finalizată cu succes!');
+    showToast('Înregistrare finalizată!');
   }
 }
-
-// Canvas Randare la rezoluție internă fixă HD 1920x1080 pentru claritate maximă a textului
-const canvas = document.getElementById('stage');
-const ctx = canvas.getContext('2d');
-ctx.imageSmoothingEnabled = true;
-ctx.imageSmoothingQuality = 'high';
-
-const camVid = document.getElementById('cam');
-
-function drawStudio() {
-  // Fixăm rezoluția internă la Full HD (1920x1080) pentru a elimina efectul de blur/neclaritate
-  if(canvas.width !== 1920 || canvas.height !== 1080) {
-    canvas.width = 1920;
-    canvas.height = 1080;
-  }
-  
-  // 1. Desenează Fundalul
-  const bgImg = new Image();
-  if(state.customBgUrl) {
-    bgImg.src = state.customBgUrl;
-  } else {
-    bgImg.src = SCENES[state.currentScene].src;
-  }
-  ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
-  
-  // 2. Ecran partajat (Share screen) randat clar pe fundal
-  if(state.screenStream && screenVid.readyState === screenVid.HAVE_ENOUGH_DATA) {
-    ctx.drawImage(screenVid, 0, 0, canvas.width, canvas.height);
-  }
-
-  // 3. Camera Web Cropată / PIP în dreapta-jos la calitate HD
-  if(camVid.readyState === camVid.HAVE_ENOUGH_DATA) {
-    const pipW = 520;
-    const pipH = 292;
-    const pipX = canvas.width - pipW - 40;
-    const pipY = canvas.height - pipH - 40;
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.roundRect(pipX, pipY, pipW, pipH, 16);
-    ctx.clip();
-    ctx.drawImage(camVid, pipX, pipY, pipW, pipH);
-    ctx.restore();
-
-    ctx.strokeStyle = '#7ecbff';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.roundRect(pipX, pipY, pipW, pipH, 16);
-    ctx.stroke();
-  }
-  
-  // 4. Logo / Text pe ecran (clar, font mărit)
-  const logoInput = document.getElementById('logoText').value || state.logoText;
-  if(logoInput) {
-    ctx.fillStyle = '#b9e4ff';
-    ctx.font = 'bold 32px Georgia';
-    ctx.shadowColor = '#000';
-    ctx.shadowBlur = 10;
-    ctx.fillText(logoInput, 40, 60);
-    ctx.shadowBlur = 0; 
-  }
-  
-  requestAnimationFrame(drawStudio);
-}
-requestAnimationFrame(drawStudio);
 
 document.getElementById('btnDownload').addEventListener('click', () => {
   const vid = document.getElementById('previewVid');
   if(!vid.src) return;
   const a = document.createElement('a');
   a.href = vid.src;
-  const title = document.getElementById('titlu').value.trim() || 'tutorial-hd-nervobizii';
-  a.download = `${title}.mp4`;
+  a.download = `${document.getElementById('titlu').value.trim() || 'tutorial'}.mp4`;
   a.click();
-  showToast('Se descarcă fișierul video HD...');
 });
 
 document.getElementById('btnDelete').addEventListener('click', () => {
   document.getElementById('previewVid').src = '';
   goTo('studio');
-  showToast('Pregătit pentru o nouă înregistrare.');
 });
 
 document.getElementById('btnMic').addEventListener('click', (e) => {
   state.micOn = !state.micOn;
   e.target.classList.toggle('on', state.micOn);
   e.target.textContent = state.micOn ? '🎙 Mic ON' : '🎙 Mic OFF';
-  if(state.stream) {
-    state.stream.getAudioTracks().forEach(track => track.enabled = state.micOn);
-  }
-  showToast(state.micOn ? 'Microfon activat' : 'Microfon dezactivat');
+  if(state.stream) state.stream.getAudioTracks().forEach(t => t.enabled = state.micOn);
 });
 </script>
 </body>
