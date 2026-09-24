@@ -218,6 +218,7 @@ canvas.addEventListener('mousedown', (e) => {
   const mouseX = (e.clientX - rect.left) * scaleX;
   const mouseY = (e.clientY - rect.top) * scaleY;
 
+  // Verificăm colțul inferior-drept pentru resize liber
   if(mouseX >= camBox.x + camBox.w - 15 && mouseX <= camBox.x + camBox.w + 15 &&
      mouseY >= camBox.y + camBox.h - 15 && mouseY <= camBox.y + camBox.h + 15) {
     activeHandle = 'resize';
@@ -263,9 +264,11 @@ function renderStudio() {
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
+  // Fundal simplu negru sau scenă implicită
   ctx.fillStyle = '#071018';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+  // Randare Cameră Web cu Free Transform și AI Cut
   if(camVid.readyState === camVid.HAVE_ENOUGH_DATA) {
     ctx.save();
     ctx.beginPath();
@@ -278,30 +281,13 @@ function renderStudio() {
       offCtx.drawImage(camVid, 0, 0, camBox.w, camBox.h);
       let frame = offCtx.getImageData(0, 0, camBox.w, camBox.h);
       let data = frame.data;
-      
-      // Îmbunătățire AI CUT: Sampling din colțuri pentru a estima fundalul automat
-      // și eliminare bazată pe toleranță de culoare (chroma / luma range)
-      let c1_r = data[0], c1_g = data[1], c1_b = data[2];
-      let c2_r = data[(camBox.w - 1) * 4], c2_g = data[(camBox.w - 1) * 4 + 1], c2_b = data[(camBox.w - 1) * 4 + 2];
-      let bgR = (c1_r + c2_r) / 2;
-      let bgG = (c1_g + c2_g) / 2;
-      let bgB = (c1_b + c2_b) / 2;
-
       for (let i = 0; i < data.length; i += 4) {
         let r = data[i], g = data[i+1], b = data[i+2];
-        
-        // Distanța euclidiană față de culoarea medie a fundalului de pe margini + prag de lumină uniformă
-        let diff = Math.abs(r - bgR) + Math.abs(g - bgG) + Math.abs(b - bgB);
         let maxColor = Math.max(r, g, b);
         let minColor = Math.min(r, g, b);
-        let sat = maxColor - minColor;
-
-        // Dacă pixelul este foarte apropiat de fundalul detectat sau e uniform (alb/gri deschis/verde/gri închis) fără saturație de piele
-        if ((diff < 38 && sat < 25) || (maxColor > 225 && sat < 15) || (maxColor < 35 && sat < 15)) {
-          data[i+3] = 0; // Transparență completă
-        } else if (diff < 55 && sat < 35) {
-          // Semi-transparență pentru margini (antialiasing fin pentru a evita efectul de dinte de ferăstrău)
-          data[i+3] = Math.floor((diff / 55) * 255);
+        // Algoritm curat de eliminare fundal deschis/închis
+        if ((maxColor < 45 && (maxColor - minColor) < 15) || (r > 210 && g > 210 && b > 210 && (maxColor - minColor) < 12)) {
+          data[i+3] = 0;
         }
       }
       offCtx.putImageData(frame, 0, 0);
@@ -311,6 +297,7 @@ function renderStudio() {
     }
     ctx.restore();
 
+    // Contur și mâner Free Transform în colțul din dreapta-jos
     ctx.strokeStyle = '#7ecbff';
     ctx.lineWidth = 2;
     ctx.strokeRect(camBox.x, camBox.y, camBox.w, camBox.h);
