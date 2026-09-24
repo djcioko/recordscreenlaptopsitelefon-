@@ -18,23 +18,23 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:sans-se
 
 .timer{position:absolute;right:16px;top:16px;background:rgba(0,0,0,0.7);padding:6px 12px;border-radius:8px;color:#fff;font-size:14px;border:1px solid var(--line);z-index:15}
 
-.control-panel{position:absolute;bottom:0;left:0;width:100%;background:rgba(10,20,29,0.9);border-top:1px solid var(--line);padding:10px 16px;display:flex;flex-direction:column;gap:8px;z-index:25;transition:transform 0.3s ease}
+.control-panel{position:absolute;bottom:0;left:0;width:100%;background:rgba(10,20,29,0.92);border-top:1px solid var(--line);padding:10px 16px;display:flex;flex-direction:column;gap:8px;z-index:25;transition:transform 0.3s ease}
 .control-panel.hidden{transform:translateY(100%)}
 
 .tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center}
-.btn{border:1px solid #5aa0d0;background:linear-gradient(#3a7eb0,#1d4e73);color:#eaf6ff;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:6px}
+.btn{border:1px solid #5aa0d0;background:linear-gradient(#3a7eb0,#1d4e73);color:#eaf6ff;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:11px;display:inline-flex;align-items:center;gap:6px}
 .btn.primary{background:linear-gradient(#4aa0d8,#21608f)}
 .btn.danger{border-color:#7a2a22;color:#f3c2bc;background:linear-gradient(#5a2a28,#2a1514)}
 .btn.green{border-color:#2d6a3c;color:#b6f0c6}
 .btn.on{outline:2px solid #7ecbff;background:linear-gradient(#21608f,#10304a)}
 
-.rec-row{display:flex;align-items:center;justify-content:center;gap:20px}
-.rec-btn{width:50px;height:50px;border-radius:50%;border:3px solid #fff;background:#c1392b;cursor:pointer;transition:0.2s}
+.rec-row{display:flex;align-items:center;justify-content:center;gap:15px;flex-wrap:wrap}
+.rec-btn{width:46px;height:46px;border-radius:50%;border:3px solid #fff;background:#c1392b;cursor:pointer;transition:0.2s}
 .rec-btn:hover{transform:scale(1.05)}
-.rec-btn.rec{background:#fff;border-color:#c1392b;border-radius:10px;width:32px;height:32px}
+.rec-btn.rec{background:#fff;border-color:#c1392b;border-radius:10px;width:30px;height:30px}
 
-.vumeter-box{display:flex;align-items:center;gap:8px;background:#03070b;padding:6px 12px;border-radius:8px;border:1px solid var(--line)}
-.vumeter-bar{width:100px;height:10px;background:#1c3344;border-radius:5px;overflow:hidden}
+.vumeter-box{display:flex;align-items:center;gap:6px;background:#03070b;padding:4px 10px;border-radius:8px;border:1px solid var(--line)}
+.vumeter-bar{width:80px;height:8px;background:#1c3344;border-radius:4px;overflow:hidden}
 .vumeter-fill{height:100%;width:0%;background:linear-gradient(90deg, #2d6a3c, #f1c40f, #c1392b);transition:width 0.05s linear}
 
 .hide-btn{position:absolute;left:16px;top:16px;z-index:30;padding:6px 14px;border-radius:8px;border:1px solid #7ecbff;background:rgba(13,24,34,0.8);color:#b9e4ff;font-size:11px;cursor:pointer}
@@ -58,6 +58,7 @@ video.preview{width:100%;border-radius:8px;background:#000;max-height:450px;obje
   <div class="studio" id="stageBox">
     <video id="cam" class="raw" playsinline muted></video>
     <video id="screenShareVid" class="raw" playsinline autoplay muted></video>
+    <video id="customMediaVid" class="raw" playsinline loop muted></video>
     <canvas id="stage"></canvas>
     
     <button class="hide-btn" id="btnHide">ASCUNDE CONTROALE</button>
@@ -76,8 +77,11 @@ video.preview{width:100%;border-radius:8px;background:#000;max-height:450px;obje
       <button class="rec-btn" id="recBtn" title="Start/Stop Inregistrare"></button>
       <button class="btn primary" id="btnShareScreen">🖥️ Share Screen Full HD</button>
       <button class="btn" id="btnAiCut">AI CUT OFF</button>
+      <button class="btn" id="btnUploadMedia">📁 Upload Foto/Video</button>
     </div>
   </div>
+
+  <input type="file" id="mediaInput" accept="image/*,video/*" hidden/>
 </section>
 
 <!-- PREVIEW SCREEN -->
@@ -111,7 +115,9 @@ let state = {
   micOn: true,
   aiCut: false,
   stream: null,
-  screenStream: null
+  screenStream: null,
+  customMediaType: null, // 'image' sau 'video'
+  customMediaObj: null
 };
 
 function showToast(msg) {
@@ -176,6 +182,7 @@ function updateVuMeter() {
   requestAnimationFrame(updateVuMeter);
 }
 
+// Share Screen Full HD
 const screenVid = document.getElementById('screenShareVid');
 document.getElementById('btnShareScreen').addEventListener('click', async () => {
   try {
@@ -206,12 +213,35 @@ function stopScreenShare() {
   document.getElementById('btnShareScreen').classList.remove('on');
 }
 
-// AI CUT Toggle - Curăță fundalul menținând utilizatorul complet vizibil
+// Upload Foto / Video
+const mediaInput = document.getElementById('mediaInput');
+const customMediaVid = document.getElementById('customMediaVid');
+document.getElementById('btnUploadMedia').addEventListener('click', () => mediaInput.click());
+
+mediaInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const url = URL.createObjectURL(file);
+  if(file.type.startsWith('image/')) {
+    state.customMediaType = 'image';
+    const img = new Image();
+    img.src = url;
+    img.onload = () => { state.customMediaObj = img; showToast('Imagine încărcată cu succes!'); };
+  } else if(file.type.startsWith('video/')) {
+    state.customMediaType = 'video';
+    customMediaVid.src = url;
+    customMediaVid.play();
+    state.customMediaObj = customMediaVid;
+    showToast('Video încărcat cu succes!');
+  }
+});
+
+// AI CUT Toggle
 document.getElementById('btnAiCut').addEventListener('click', (e) => {
   state.aiCut = !state.aiCut;
   e.target.classList.toggle('on', state.aiCut);
   e.target.textContent = state.aiCut ? 'AI CUT ON' : 'AI CUT OFF';
-  showToast(state.aiCut ? 'AI Cut activat (păstrează întreg utilizatorul)' : 'AI Cut dezactivat');
+  showToast(state.aiCut ? 'AI Cut activat (eliminare curată fundal)' : 'AI Cut dezactivat');
 });
 
 // Cameră interactivă: Free Transform, Drag & Resize
@@ -267,8 +297,6 @@ window.addEventListener('mouseup', () => {
 });
 
 const camVid = document.getElementById('cam');
-
-// Buffer intern pentru procesare avansată AI Cut fără tăierea utilizatorului
 const offScreenCanvas = document.createElement('canvas');
 const offCtx = offScreenCanvas.getContext('2d', { willReadFrequently: true });
 
@@ -280,7 +308,10 @@ function drawStudio() {
   
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  if(state.screenStream && screenVid.readyState === screenVid.HAVE_ENOUGH_DATA) {
+  // 1. Fundal: Media încărcată sau Share Screen sau negru
+  if(state.customMediaObj) {
+    ctx.drawImage(state.customMediaObj, 0, 0, canvas.width, canvas.height);
+  } else if(state.screenStream && screenVid.readyState === screenVid.HAVE_ENOUGH_DATA) {
     ctx.drawImage(screenVid, 0, 0, canvas.width, canvas.height);
   } else {
     ctx.fillStyle = '#03070b';
@@ -288,10 +319,11 @@ function drawStudio() {
     ctx.fillStyle = '#9bb6c9';
     ctx.font = '20px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Apăsați pe "Share Screen Full HD" pentru a partaja ecranul', canvas.width / 2, canvas.height / 2);
+    ctx.fillText('Apăsați pe "Share Screen Full HD" sau "Upload Foto/Video"', canvas.width / 2, canvas.height / 2);
     ctx.textAlign = 'left';
   }
 
+  // 2. Camera Web cu Free Transform & AI Cut curat (fără umbre cenușii)
   if(camVid.readyState === camVid.HAVE_ENOUGH_DATA) {
     ctx.save();
     ctx.beginPath();
@@ -299,7 +331,6 @@ function drawStudio() {
     ctx.clip();
 
     if(state.aiCut) {
-      // AI Cut optimizat: păstrează integral utilizatorul pe ecran, atenuând fundalul din spatele lui
       offScreenCanvas.width = camBox.w;
       offScreenCanvas.height = camBox.h;
       offCtx.drawImage(camVid, 0, 0, camBox.w, camBox.h);
@@ -308,10 +339,11 @@ function drawStudio() {
       let data = frame.data;
       for (let i = 0; i < data.length; i += 4) {
         let r = data[i], g = data[i+1], b = data[i+2];
-        // Dacă pixelul este deschis la culoare sau aproape de tonurile de piele/haine, îl păstrăm integral; altfel reducem opacitatea fundalului
+        // Elimină fundalurile uniforme (închise la culoare sau albe/deschise extreme) lăsând utilizatorul clar
         let brightness = (r + g + b) / 3;
-        if (brightness < 30 || brightness > 230) {
-          data[i+3] = Math.max(0, data[i+3] - 120); // Atenuează fundalul lăsând utilizatorul vizibil complet
+        let isBackground = (brightness < 35 || brightness > 225) && (Math.abs(r - g) < 15 && Math.abs(g - b) < 15);
+        if (isBackground) {
+          data[i+3] = 0; // Transparena 100% pentru fundal, curat complet
         }
       }
       offCtx.putImageData(frame, 0, 0);
@@ -333,6 +365,7 @@ function drawStudio() {
 }
 requestAnimationFrame(drawStudio);
 
+// Înregistrare Video
 let mediaRecorder;
 let recordedChunks = [];
 let isRecording = false;
