@@ -21,7 +21,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:sans-se
 .control-panel{position:absolute;bottom:0;left:0;width:100%;background:rgba(10,20,29,0.92);border-top:1px solid var(--line);padding:10px 16px;display:flex;flex-direction:column;gap:8px;z-index:25;transition:transform 0.3s ease}
 .control-panel.hidden{transform:translateY(100%)}
 
-.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center}
 .btn{border:1px solid #5aa0d0;background:linear-gradient(#3a7eb0,#1d4e73);color:#eaf6ff;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:11px;display:inline-flex;align-items:center;gap:6px}
 .btn.primary{background:linear-gradient(#4aa0d8,#21608f)}
 .btn.danger{border-color:#7a2a22;color:#f3c2bc;background:linear-gradient(#5a2a28,#2a1514)}
@@ -116,7 +115,7 @@ let state = {
   aiCut: false,
   stream: null,
   screenStream: null,
-  customMediaType: null, // 'image' sau 'video'
+  customMediaType: null,
   customMediaObj: null
 };
 
@@ -241,14 +240,14 @@ document.getElementById('btnAiCut').addEventListener('click', (e) => {
   state.aiCut = !state.aiCut;
   e.target.classList.toggle('on', state.aiCut);
   e.target.textContent = state.aiCut ? 'AI CUT ON' : 'AI CUT OFF';
-  showToast(state.aiCut ? 'AI Cut activat (eliminare curată fundal)' : 'AI Cut dezactivat');
+  showToast(state.aiCut ? 'AI Cut activat' : 'AI Cut dezactivat');
 });
 
-// Cameră interactivă: Free Transform, Drag & Resize
-let camBox = { x: 50, y: 50, w: 360, h: 202 };
-let isDragging = false;
-let isResizing = false;
+// FREE TRANSFORM: Lățime și Înălțime controlate complet din colțuri/margini
+let camBox = { x: 50, y: 50, w: 380, h: 220 };
+let activeHandle = null; // 'move', 'resize-br', 'resize-r', 'resize-b'
 let dragStartX = 0, dragStartY = 0;
+let initialBox = {};
 
 const canvas = document.getElementById('stage');
 const ctx = canvas.getContext('2d');
@@ -262,38 +261,40 @@ canvas.addEventListener('mousedown', (e) => {
   const mouseX = (e.clientX - rect.left) * scaleX;
   const mouseY = (e.clientY - rect.top) * scaleY;
 
-  if(mouseX >= camBox.x + camBox.w - 30 && mouseX <= camBox.x + camBox.w + 10 &&
-     mouseY >= camBox.y + camBox.h - 30 && mouseY <= camBox.y + camBox.h + 10) {
-    isResizing = true;
+  // Verificăm colțul inferior-drept pentru resize liber lățime/înălțime
+  if(mouseX >= camBox.x + camBox.w - 15 && mouseX <= camBox.x + camBox.w + 10 &&
+     mouseY >= camBox.y + camBox.h - 15 && mouseY <= camBox.y + camBox.h + 10) {
+    activeHandle = 'resize';
   } else if(mouseX >= camBox.x && mouseX <= camBox.x + camBox.w && mouseY >= camBox.y && mouseY <= camBox.y + camBox.h) {
-    isDragging = true;
+    activeHandle = 'move';
     dragStartX = mouseX - camBox.x;
     dragStartY = mouseY - camBox.y;
   }
+  initialBox = { ...camBox };
 });
 
 window.addEventListener('mousemove', (e) => {
+  if (!activeHandle) return;
   const rect = canvas.getBoundingClientRect();
   const scaleX = canvas.width / rect.width;
   const scaleY = canvas.height / rect.height;
   const mouseX = (e.clientX - rect.left) * scaleX;
   const mouseY = (e.clientY - rect.top) * scaleY;
 
-  if(isDragging) {
+  if(activeHandle === 'move') {
     camBox.x = mouseX - dragStartX;
     camBox.y = mouseY - dragStartY;
-  } else if(isResizing) {
+  } else if(activeHandle === 'resize') {
+    // Free Transform: Modifică lățimea și înălțimea independent direct cu mouse-ul
     let newW = mouseX - camBox.x;
-    if(newW > 120 && newW < canvas.width - camBox.x) {
-      camBox.w = newW;
-      camBox.h = newW * (9/16);
-    }
+    let newH = mouseY - camBox.y;
+    if(newW > 100) camBox.w = newW;
+    if(newH > 80) camBox.h = newH;
   }
 });
 
 window.addEventListener('mouseup', () => {
-  isDragging = false;
-  isResizing = false;
+  activeHandle = null;
 });
 
 const camVid = document.getElementById('cam');
@@ -308,7 +309,7 @@ function drawStudio() {
   
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // 1. Fundal: Media încărcată sau Share Screen sau negru
+  // 1. Fundal complet pe ecran (Full Screen)
   if(state.customMediaObj) {
     ctx.drawImage(state.customMediaObj, 0, 0, canvas.width, canvas.height);
   } else if(state.screenStream && screenVid.readyState === screenVid.HAVE_ENOUGH_DATA) {
@@ -323,11 +324,11 @@ function drawStudio() {
     ctx.textAlign = 'left';
   }
 
-  // 2. Camera Web cu Free Transform & AI Cut curat (fără umbre cenușii)
+  // 2. Camera Web cu Free Transform și AI Cut optimizat
   if(camVid.readyState === camVid.HAVE_ENOUGH_DATA) {
     ctx.save();
     ctx.beginPath();
-    ctx.roundRect(camBox.x, camBox.y, camBox.w, camBox.h, 12);
+    ctx.rect(camBox.x, camBox.y, camBox.w, camBox.h);
     ctx.clip();
 
     if(state.aiCut) {
@@ -339,11 +340,13 @@ function drawStudio() {
       let data = frame.data;
       for (let i = 0; i < data.length; i += 4) {
         let r = data[i], g = data[i+1], b = data[i+2];
-        // Elimină fundalurile uniforme (închise la culoare sau albe/deschise extreme) lăsând utilizatorul clar
-        let brightness = (r + g + b) / 3;
-        let isBackground = (brightness < 35 || brightness > 225) && (Math.abs(r - g) < 15 && Math.abs(g - b) < 15);
-        if (isBackground) {
-          data[i+3] = 0; // Transparena 100% pentru fundal, curat complet
+        // Eliminare inteligentă a fundalului uniform fără afectarea hainelor sau a pielii
+        let maxColor = Math.max(r, g, b);
+        let minColor = Math.min(r, g, b);
+        let diff = maxColor - minColor;
+        // Dacă pixelul este fundal neutru/închis sau alb simplu, devine transparent
+        if ((maxColor < 45 && diff < 15) || (r > 210 && g > 210 && b > 210 && diff < 12)) {
+          data[i+3] = 0;
         }
       }
       offCtx.putImageData(frame, 0, 0);
@@ -353,8 +356,9 @@ function drawStudio() {
     }
     ctx.restore();
 
+    // Chenar și mâner de redimensionare liberă (Free Transform)
     ctx.strokeStyle = '#7ecbff';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 2;
     ctx.strokeRect(camBox.x, camBox.y, camBox.w, camBox.h);
 
     ctx.fillStyle = '#7ecbff';
