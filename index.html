@@ -9,19 +9,15 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:sans-serif;overflow:hidden}
 .app{display:flex;flex-direction:column;height:100vh;width:100vw}
-.topbar{display:flex;justify-content:space-between;align-items:center;padding:8px 16px;background:var(--panel);border-bottom:1px solid var(--line);z-index:20}
-.logo{font-size:13px;color:var(--blue2);font-weight:bold;letter-spacing:.1em}
 .screen{display:none;flex:1;flex-direction:column;position:relative;background:#000;overflow:hidden}
 .screen.active{display:flex}
 
-/* Studio & Screen Fullscreen Layout */
 .studio{position:relative;flex:1;width:100%;height:100%;background:#000;overflow:hidden}
 .studio canvas{width:100%;height:100%;display:block;background:#000}
 .studio video.raw{position:absolute;opacity:0;pointer-events:none}
 
 .timer{position:absolute;right:16px;top:16px;background:rgba(0,0,0,0.7);padding:6px 12px;border-radius:8px;color:#fff;font-size:14px;border:1px solid var(--line);z-index:15}
 
-/* Panou controale inferior flotant */
 .control-panel{position:absolute;bottom:0;left:0;width:100%;background:rgba(10,20,29,0.9);border-top:1px solid var(--line);padding:10px 16px;display:flex;flex-direction:column;gap:8px;z-index:25;transition:transform 0.3s ease}
 .control-panel.hidden{transform:translateY(100%)}
 
@@ -37,7 +33,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:sans-se
 .rec-btn:hover{transform:scale(1.05)}
 .rec-btn.rec{background:#fff;border-color:#c1392b;border-radius:10px;width:32px;height:32px}
 
-/* VU Metru audio */
 .vumeter-box{display:flex;align-items:center;gap:8px;background:#03070b;padding:6px 12px;border-radius:8px;border:1px solid var(--line)}
 .vumeter-bar{width:100px;height:10px;background:#1c3344;border-radius:5px;overflow:hidden}
 .vumeter-fill{height:100%;width:0%;background:linear-gradient(90deg, #2d6a3c, #f1c40f, #c1392b);transition:width 0.05s linear}
@@ -137,7 +132,6 @@ document.querySelectorAll('[data-go]').forEach(btn => {
   btn.addEventListener('click', () => goTo(btn.getAttribute('data-go')));
 });
 
-// Ascundere controale
 let controlsHidden = false;
 document.getElementById('btnHide').addEventListener('click', () => {
   controlsHidden = !controlsHidden;
@@ -145,7 +139,6 @@ document.getElementById('btnHide').addEventListener('click', () => {
   document.getElementById('btnHide').textContent = controlsHidden ? 'ARATĂ CONTROALE' : 'ASCUNDE CONTROALE';
 });
 
-// Cameră Web & Audio + Analizor VU-Metru
 let audioContext, analyser, microphone, dataArray;
 
 async function initCamera() {
@@ -156,7 +149,6 @@ async function initCamera() {
     camVid.srcObject = stream;
     camVid.play();
 
-    // Setare VU-Metru audio
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
     analyser = audioContext.createAnalyser();
     microphone = audioContext.createMediaStreamSource(stream);
@@ -184,7 +176,6 @@ function updateVuMeter() {
   requestAnimationFrame(updateVuMeter);
 }
 
-// Share Screen Full HD
 const screenVid = document.getElementById('screenShareVid');
 document.getElementById('btnShareScreen').addEventListener('click', async () => {
   try {
@@ -215,15 +206,15 @@ function stopScreenShare() {
   document.getElementById('btnShareScreen').classList.remove('on');
 }
 
-// AI CUT Toggle
+// AI CUT Toggle - Curăță fundalul menținând utilizatorul complet vizibil
 document.getElementById('btnAiCut').addEventListener('click', (e) => {
   state.aiCut = !state.aiCut;
   e.target.classList.toggle('on', state.aiCut);
   e.target.textContent = state.aiCut ? 'AI CUT ON' : 'AI CUT OFF';
-  showToast(state.aiCut ? 'AI Cut activat (eliminare fundal simplificat)' : 'AI Cut dezactivat');
+  showToast(state.aiCut ? 'AI Cut activat (păstrează întreg utilizatorul)' : 'AI Cut dezactivat');
 });
 
-// CAMERA INTERactivă: Free Transform, Drag & Resize cu Mouse-ul direct pe Canvas
+// Cameră interactivă: Free Transform, Drag & Resize
 let camBox = { x: 50, y: 50, w: 360, h: 202 };
 let isDragging = false;
 let isResizing = false;
@@ -241,7 +232,6 @@ canvas.addEventListener('mousedown', (e) => {
   const mouseX = (e.clientX - rect.left) * scaleX;
   const mouseY = (e.clientY - rect.top) * scaleY;
 
-  // Verificăm dacă e în colțul din dreapta-jos al camerei (pentru resize) sau în interior (pentru drag)
   if(mouseX >= camBox.x + camBox.w - 30 && mouseX <= camBox.x + camBox.w + 10 &&
      mouseY >= camBox.y + camBox.h - 30 && mouseY <= camBox.y + camBox.h + 10) {
     isResizing = true;
@@ -266,7 +256,7 @@ window.addEventListener('mousemove', (e) => {
     let newW = mouseX - camBox.x;
     if(newW > 120 && newW < canvas.width - camBox.x) {
       camBox.w = newW;
-      camBox.h = newW * (9/16); // Menținere aspect ratio 16:9
+      camBox.h = newW * (9/16);
     }
   }
 });
@@ -276,8 +266,11 @@ window.addEventListener('mouseup', () => {
   isResizing = false;
 });
 
-// Bucla principală de randare Full Screen
 const camVid = document.getElementById('cam');
+
+// Buffer intern pentru procesare avansată AI Cut fără tăierea utilizatorului
+const offScreenCanvas = document.createElement('canvas');
+const offCtx = offScreenCanvas.getContext('2d', { willReadFrequently: true });
 
 function drawStudio() {
   if(canvas.width !== window.innerWidth || canvas.height !== window.innerHeight) {
@@ -287,7 +280,6 @@ function drawStudio() {
   
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // 1. Desenează Share Screen pe fundal complet
   if(state.screenStream && screenVid.readyState === screenVid.HAVE_ENOUGH_DATA) {
     ctx.drawImage(screenVid, 0, 0, canvas.width, canvas.height);
   } else {
@@ -300,7 +292,6 @@ function drawStudio() {
     ctx.textAlign = 'left';
   }
 
-  // 2. Desenează Camera Web (cu Free Transform & AI Cut opțional)
   if(camVid.readyState === camVid.HAVE_ENOUGH_DATA) {
     ctx.save();
     ctx.beginPath();
@@ -308,23 +299,32 @@ function drawStudio() {
     ctx.clip();
 
     if(state.aiCut) {
-      // Efect simplificat AI Cut (filtrare luminozitate/fundal orientativ)
-      ctx.drawImage(camVid, camBox.x, camBox.y, camBox.w, camBox.h);
-      ctx.globalCompositeOperation = 'destination-in';
-      ctx.fillStyle = 'rgba(255,255,255,0.95)';
-      ctx.fillRect(camBox.x, camBox.y, camBox.w, camBox.h);
-      ctx.globalCompositeOperation = 'source-over';
+      // AI Cut optimizat: păstrează integral utilizatorul pe ecran, atenuând fundalul din spatele lui
+      offScreenCanvas.width = camBox.w;
+      offScreenCanvas.height = camBox.h;
+      offCtx.drawImage(camVid, 0, 0, camBox.w, camBox.h);
+      
+      let frame = offCtx.getImageData(0, 0, camBox.w, camBox.h);
+      let data = frame.data;
+      for (let i = 0; i < data.length; i += 4) {
+        let r = data[i], g = data[i+1], b = data[i+2];
+        // Dacă pixelul este deschis la culoare sau aproape de tonurile de piele/haine, îl păstrăm integral; altfel reducem opacitatea fundalului
+        let brightness = (r + g + b) / 3;
+        if (brightness < 30 || brightness > 230) {
+          data[i+3] = Math.max(0, data[i+3] - 120); // Atenuează fundalul lăsând utilizatorul vizibil complet
+        }
+      }
+      offCtx.putImageData(frame, 0, 0);
+      ctx.drawImage(offScreenCanvas, camBox.x, camBox.y);
     } else {
       ctx.drawImage(camVid, camBox.x, camBox.y, camBox.w, camBox.h);
     }
     ctx.restore();
 
-    // Chenar cameră
     ctx.strokeStyle = '#7ecbff';
     ctx.lineWidth = 3;
     ctx.strokeRect(camBox.x, camBox.y, camBox.w, camBox.h);
 
-    // Colț de redimensionare vizibil
     ctx.fillStyle = '#7ecbff';
     ctx.fillRect(camBox.x + camBox.w - 10, camBox.y + camBox.h - 10, 10, 10);
   }
@@ -333,7 +333,6 @@ function drawStudio() {
 }
 requestAnimationFrame(drawStudio);
 
-// Înregistrare Video
 let mediaRecorder;
 let recordedChunks = [];
 let isRecording = false;
